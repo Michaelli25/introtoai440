@@ -1,0 +1,189 @@
+%! Author = Robert Kulesa, Daniel Liu, Michael Li
+%! Date = 10/5/2021
+
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+
+% Document
+\begin{document}
+    \begin{titlepage}
+        \begin{center}
+            \vspace{1cm}
+
+            \Huge
+            \textbf{Fast Trajectory Replanning}
+
+            \vspace{0.5cm}
+            \LARGE
+            Assignment 1
+
+            \vspace{1cm}
+
+            \textbf{Michael Li - 192008938}
+
+            \textbf{Daniel Liu - 184007283}
+
+            \textbf{Robert Kulesa - 185009892}
+
+
+            \vfill
+
+
+            \vspace{0.8cm}
+
+            \Large
+            CS440 Fall 2021\\
+            Professor Boularias\\
+            Rutgers University - New Brunswick\\
+            October 22, 2021
+
+        \end{center}
+    \end{titlepage}
+    \begin{center}
+        \Large
+        \textbf{Part 0 - Setup your environments}
+    \end{center}
+    \normalsize
+    Our gridworlds are initialized using DFS from a random start node.
+    A random, unmarked neighbor node is selected and initialized as unblocked with 70\% probability (in which case DFS is called on this neighbor), or an obstacle with 30\% probability.
+    DFS is then called on any remaining uninitialized nodes.
+
+    \begin{center}
+        \Large
+        \textbf{Part 1 - Understanding the methods}
+    \end{center}
+    \normalsize
+    \begin{enumerate}
+        \item[a)] The agent moves east, because the unblocked,
+        unvisited neighbor with the lowest cost $f(x) = g(x) + h(x)$ is the eastern neighbor.
+        Using manhattan distance as $h(x)$, the eastern neighbor has $f(x) = 1 + 2 = 3$,
+        whereas the northern neighbor has $f(x) = 1 + 4 = 5$.
+        Therefore, the eastern neighbor is selected, and the agent explores the eastern cell.
+        \item[b)] The agent must be able to reach the target cell, or realize it cannot reach it, in finite time in a finite gridworld.
+        A* finishes when the open list is empty, in which case there is no valid path, or when the agent reaches the goal state.
+        The open list starts out with the initial state, and all potential neighboring states are expanded to compute a potential path.
+        Thus, in the worst case, all nodes with a valid path from the initial state will be expanded in finite time.
+        Therefore, the agent must be able to reach the target cell, or discover it cannot reach it, in finite time in a finite gridworld.
+        \newline\newline
+        When ComputePath returns a path for the agent to follow, the agent follows it until it reaches a blocked square,
+        in which case it calls ComputePath again (unless it cannot reach the target).
+        After one ComputePath execution, the agent can move a maximum of $n$ nodes, where $n$ is the number
+        of unblocked cells in the world.
+        ComputePath can be called once for each unblocked cell, so thus, the number of moves the agent makes in the gridworld
+        is upper bounded by $O(n^2)$
+    \end{enumerate}
+
+    \begin{center}
+        \Large
+        \textbf{Part 2 - The Effects of Ties}
+    \end{center}
+    \normalsize
+    For this experiment, we ran forward repeated A* on $50$, $101 \times 101$ gridworlds generated as specified in Part 0.
+    When breaking ties in favor of smaller g values, the experiment finished in a total of $16.014958$ s, at an average of $32.029916$ ms per gridworld.
+    When breaking ties in favor of larger g values, the experiment finished in a total of $5.808179$ s, at an average of $11.616358$ ms per gridworld.
+    \newline\newline
+    This is because by favoring larger g values, the agent favors exploring states that are further from the start state first, so the agent
+    is more likely to reach the target state in less time.
+    
+    \begin{center}
+        \Large
+        \textbf{Part 3 - Forward vs. Backward}
+    \end{center}
+    \normalsize
+    %insert explanation here
+    This experiment was conducted on the same $50$, $101 \times 101$ gridworlds as specified in Part 2.
+    When using repeated forward A*, the experiment finished in a total of $5.808179$ s, at an average of $11.616358$ ms per gridworld.
+    When using repeated backward A*, the experiment finished in a total of $22.95945$ s, at an average of $45.9189$ ms per gridworld.
+    \newline\newline
+    Repeated forward A* runs much faster than repeated backward A*.
+    This is because repeated backward A* must expand more states closer to the starting state of the agent before the agent is able to traverse far,
+    which ends up wasting time.
+
+
+    \begin{center}
+        \Large
+        \textbf{Part 4 - Heuristics in the Adaptive A*}
+    \end{center}
+    \normalsize
+    %insert explanation here
+    a) Manhattan distance is defined as the sum of the magnitudes of the difference between the x and y coordinates of a given start and end point. A heuristic is considered consistent if its estimate is always less than or equal to the estimated distance from any neighbouring node to the goal, plus the cost of reaching that neighbour. This can be represented by the following equation:\\
+    \centerline{$h(N) \le c(N, P) + h(P)$ where:} \\
+    $N$ is a node in the gridworld \\
+    $P$ is a neighbor of N\\
+    $h(N)$ is the estimated cost from N to the goal\\
+    $h(P)$ is the estimated cost from P to the goal\\
+    $c(N,P)$ is the cost of reaching node P from N\\
+    
+    Assuming A* is inconsistent in a gridworld where only cardinal movement is allowed:\\
+    \centerline{$h(N) > c(N, P) + h(P)$}\\
+    
+    Shifting $h(P)$ to the right side of the equation:\\
+    \centerline{$h(N) - h(P) > c(N, P)$}\\
+    
+    In a gridworld where only cardinal movement is allowed, h(N)-h(P) is equal to the Manhattan distance between N and P:\\
+    \centerline{$|X\textsubscript{N}-X\textsubscript{P}| + |Y\textsubscript{N}-Y\textsubscript{P}| > c(N, P)$}\\
+    
+    The only way the Manhattan distance between N and P could be greater than c(N,P) would be if the agent were to make a diagonal movement. However, since the agent in our gridworld is restricted to cardinal movement, this move is impossible. Thus, Manhattan distance is consistent in gridworlds in which the agent can only move in cardinal directions.\\
+
+    b) Adaptive A* uses the following heuristic:\\
+    \centerline{$h(N) = g(G) - g(N)$ where}
+    $g(N)$ is the distance between the start start and the current node\\
+    $g(G)$ is the distance between the start start and the goal state\\
+    
+    Substituting this into the consistent heuristic function results in the following equation\\
+    \centerline{$g(G) - g(N) \le c(N,P) + g(G) - g(P)$}\\
+    
+    Removing g(G) from both sides of the equation:\\
+    \centerline{$g(P) - g(N) \le c(N,P)$}\\
+    
+    Given that g(P) and g(N) is computed with Manhattan distance\\
+    \centerline{$|X\textsubscript{P}-X\textsubscript{N}| + |Y\textsubscript{P}-Y\textsubscript{N}| \le c(N, P)$}\\
+    
+    Since adaptive A* is being conducted in a gridworld where only cardinal movement is possible, the cost of movement between nodes N and P can never exceed the Manhattan distance between N and P. Thus, adaptive A* maintains the consistency of the h-values.
+    
+    \begin{center}
+        \Large
+        \textbf{Part 5 - Repeated Forward A* vs. Adaptive A*}
+    \end{center}
+    \normalsize
+    %insert explanation here
+    This experiment was conducted on the same $50$, $101 \times 101$ gridworlds as specified in Part 2 and 3.
+    When using repeated A*, the experiment finished in a total of $5.808179$ s, at an average of $11.616358$ ms per gridworld.
+    When using adaptive A*, the experiment finished in a total of $5.627615$ s, at an average of $11.25523$ ms per gridworld.
+    \newline\newline
+    Adaptive A* improves upon Repeated Forward A* by increasing the heuristic value of nodes expanded by ComputePath(), which refines
+    future searches by lowering the number of states in $OPEN$ which will satisfy \[g(s_{goal}) > min_{s'\in OPEN}\left(g(s') + h(s')\right)\]
+    Since fewer nodes are expanded by Adaptive A* than in Repeated Forward A*, Adaptive A* takes less time to find the path, if one exists.
+
+    \begin{center}
+        \Large
+        \textbf{Part 6 - Statistical Significance}
+    \end{center}
+    \normalsize
+    %insert explanation here
+    %Approach where we utilize a statistical hypothesis test with k-fold cross validation
+    We can perform a statistical hypothesis test on Question 5, Repeated Forward A* vs.\ Adaptive A*.
+    By utilizing k-fold cross validation, we can train and test k models and collect their data,
+    utilizing their individual means as evidence for algorithmic performance.
+    To perform this test, we would split our sample for Repeat Forward A* as well as Adaptive A*
+    into k-folds each, and train k models per algorithm.
+    We will then get data from these trials, and utilize a statistical test to identify and observe if any difference between our trial data
+    between the two algorithms are statistically significant.
+    Typically, for machine learning algorithms,
+    a 5 times 2-fold cross validation technique is used.
+    In this case, we would partition our original sample into 2 equal sized subsamples.
+    Then, the cross-validation process is repeated for 2 folds.
+    Each k subsample is only utilized once.
+    Following this, the results from the trial can be combined to form an average estimate.
+    Then, the experiment is repeated 5 times.
+    At the end, all the data is combined to form a final average estimate.
+    This data from the two algorithms are then used in a t-test to identify if there is any significant differences.
+    If so, then we will be able to conclude that the difference in performance between the two algorithms is indeed statistically significant.
+    By performing these statistical hypothesis tests, we can have higher confidence that performance differences between two search algorithms
+    are actually systematic in nature, and not due to sampling noise.
+    
+    
+\end{document}
